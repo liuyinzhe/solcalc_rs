@@ -1,0 +1,221 @@
+import { VerticalBox, HorizontalBox, LineEdit, ComboBox, Button, GroupBox } from "std-widgets.slint";
+
+export component AppWindow inherits Window {
+    title: "SolCalc 溶液浓度计算器";
+    min-width: 500px;
+    min-height: 680px;
+    background: #f5f7fa;
+
+    // ── inputs (set from Rust) ──────────────────────────────────────────
+    in-out property <string> molar-mass-text: "";
+    in-out property <string> mass-text: "";
+    in-out property <string> volume-text: "";
+    in-out property <int>    mass-unit-index: 0;   // 0=g 1=mg
+    in-out property <int>    volume-unit-index: 0; // 0=L 1=mL
+    in-out property <string> target-conc-text: "";
+    in-out property <int>    target-unit-index: 0; // 0=mol/L 1=mmol/L 2=μmol/L 3=mg/mL 4=μg/mL 5=g/L
+
+    // ── outputs (set from Rust) ─────────────────────────────────────────
+    in property <string> molar-conc-result: "—";
+    in property <string> mass-vol-result: "—";
+    in property <string> solvent-result: "—";
+    in property <string> solute-result: "—";
+    in property <string> error-msg: "";
+
+    // ── callbacks ───────────────────────────────────────────────────────
+    callback inputs-changed();
+    callback reset-clicked();
+
+    // ── layout ──────────────────────────────────────────────────────────
+    VerticalBox {
+        padding: 16px;
+        spacing: 12px;
+
+        // Title bar
+        Rectangle {
+            height: 48px;
+            background: #1565c0;
+            border-radius: 8px;
+            HorizontalBox {
+                padding: 0px;
+                alignment: center;
+                Text {
+                    text: "SolCalc  溶液浓度计算器";
+                    color: white;
+                    font-size: 18px;
+                    font-weight: 700;
+                }
+            }
+        }
+
+        // ── Section 1: Current solution ──────────────────────────────
+        Rectangle {
+            background: white;
+            border-radius: 8px;
+            drop-shadow-blur: 4px;
+            drop-shadow-color: #00000018;
+            VerticalBox {
+                padding: 14px;
+                spacing: 10px;
+
+                Text { text: "当前溶液信息"; font-size: 14px; font-weight: 700; color: #1565c0; }
+
+                // Molar mass row
+                HorizontalBox {
+                    spacing: 8px;
+                    alignment: start;
+                    Text { text: "摩尔质量 M"; width: 100px; vertical-alignment: center; color: #333; }
+                    LineEdit {
+                        width: 160px;
+                        placeholder-text: "例: 58.44";
+                        text <=> root.molar-mass-text;
+                        edited => { root.inputs-changed(); }
+                    }
+                    Text { text: "g/mol"; vertical-alignment: center; color: #666; }
+                }
+
+                // Mass row
+                HorizontalBox {
+                    spacing: 8px;
+                    alignment: start;
+                    Text { text: "溶质质量 m"; width: 100px; vertical-alignment: center; color: #333; }
+                    LineEdit {
+                        width: 160px;
+                        placeholder-text: "例: 5.844";
+                        text <=> root.mass-text;
+                        edited => { root.inputs-changed(); }
+                    }
+                    ComboBox {
+                        width: 72px;
+                        model: ["g", "mg"];
+                        current-index <=> root.mass-unit-index;
+                        selected => { root.inputs-changed(); }
+                    }
+                }
+
+                // Volume row
+                HorizontalBox {
+                    spacing: 8px;
+                    alignment: start;
+                    Text { text: "溶液体积 V"; width: 100px; vertical-alignment: center; color: #333; }
+                    LineEdit {
+                        width: 160px;
+                        placeholder-text: "例: 1000";
+                        text <=> root.volume-text;
+                        edited => { root.inputs-changed(); }
+                    }
+                    ComboBox {
+                        width: 72px;
+                        model: ["L", "mL"];
+                        current-index <=> root.volume-unit-index;
+                        selected => { root.inputs-changed(); }
+                    }
+                }
+
+                // Error message
+                Text {
+                    text: root.error-msg;
+                    color: #c62828;
+                    font-size: 12px;
+                    visible: root.error-msg != "";
+                }
+
+                // Results
+                Rectangle {
+                    background: #e3f2fd;
+                    border-radius: 6px;
+                    VerticalBox {
+                        padding: 10px;
+                        spacing: 6px;
+                        Text { text: "▶ 当前浓度"; font-weight: 700; color: #1565c0; font-size: 13px; }
+                        HorizontalBox {
+                            spacing: 8px;
+                            Text { text: "摩尔浓度:"; width: 90px; color: #444; }
+                            Text { text: root.molar-conc-result; color: #1a237e; font-weight: 600; }
+                            Text { text: "mol/L"; color: #666; }
+                        }
+                        HorizontalBox {
+                            spacing: 8px;
+                            Text { text: "质量体积浓度:"; width: 90px; color: #444; }
+                            Text { text: root.mass-vol-result; color: #1a237e; font-weight: 600; }
+                            Text { text: "mg/mL"; color: #666; }
+                        }
+                    }
+                }
+            }
+        }
+
+        // ── Section 2: Target concentration ──────────────────────────
+        Rectangle {
+            background: white;
+            border-radius: 8px;
+            drop-shadow-blur: 4px;
+            drop-shadow-color: #00000018;
+            VerticalBox {
+                padding: 14px;
+                spacing: 10px;
+
+                Text { text: "目标浓度计算"; font-size: 14px; font-weight: 700; color: #2e7d32; }
+
+                HorizontalBox {
+                    spacing: 8px;
+                    alignment: start;
+                    Text { text: "目标浓度 c₂"; width: 100px; vertical-alignment: center; color: #333; }
+                    LineEdit {
+                        width: 160px;
+                        placeholder-text: "例: 0.05";
+                        text <=> root.target-conc-text;
+                        edited => { root.inputs-changed(); }
+                    }
+                    ComboBox {
+                        width: 90px;
+                        model: ["mol/L", "mmol/L", "μmol/L", "mg/mL", "μg/mL", "g/L"];
+                        current-index <=> root.target-unit-index;
+                        selected => { root.inputs-changed(); }
+                    }
+                }
+
+                // Dilution result
+                Rectangle {
+                    background: #e8f5e9;
+                    border-radius: 6px;
+                    VerticalBox {
+                        padding: 10px;
+                        spacing: 4px;
+                        Text { text: "▶ 稀释（加溶剂）"; font-weight: 700; color: #2e7d32; font-size: 13px; }
+                        HorizontalBox {
+                            spacing: 8px;
+                            Text { text: "需加溶剂:"; width: 80px; color: #444; }
+                            Text { text: root.solvent-result; color: #1b5e20; font-weight: 600; }
+                        }
+                    }
+                }
+
+                // Concentration increase result
+                Rectangle {
+                    background: #fff3e0;
+                    border-radius: 6px;
+                    VerticalBox {
+                        padding: 10px;
+                        spacing: 4px;
+                        Text { text: "▶ 增浓（加溶质）"; font-weight: 700; color: #e65100; font-size: 13px; }
+                        HorizontalBox {
+                            spacing: 8px;
+                            Text { text: "需加溶质:"; width: 80px; color: #444; }
+                            Text { text: root.solute-result; color: #bf360c; font-weight: 600; }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Reset button
+        HorizontalBox {
+            alignment: center;
+            Button {
+                text: "清空重置";
+                clicked => { root.reset-clicked(); }
+            }
+        }
+    }
+}

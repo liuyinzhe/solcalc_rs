@@ -1,0 +1,19 @@
+[package]
+name = "solcalc_rs"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "solcalc_rs"
+path = "src/main.rs"
+
+[dependencies]
+slint = "1.12"
+
+[build-dependencies]
+slint-build = "1.12"
+
+[profile.release]
+opt-level = 3
+lto = true
+strip = true
