@@ -38,7 +38,7 @@
 **环境要求：** Rust 1.75+，Windows 10+
 
 ```bash
-git clone https://github.com/your-username/solcalc_rs.git
+git clone https://github.com/liuyinzhe/solcalc_rs.git
 cd solcalc_rs
 cargo build --release
 ```
